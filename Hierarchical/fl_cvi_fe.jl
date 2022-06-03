@@ -18,7 +18,7 @@ dataset = [[58.7226956168386, 45.13976354300799, 34.891234306106206, 22.04981381
  [8.268877742477276, 35.26754519612162, 33.05402194461256]]
 
 N = 0
-for i=1:8 N += length(dataset[i]) end
+for i=1:8 global N += length(dataset[i]) end
 
 # -------------------------------------------
 # ForneyLab Model Specification
@@ -42,7 +42,7 @@ for i=1:8
     @RV x[i] ~ GaussianMeanPrecision(μ,s)
     @RV w[i] ~ Gamma(α_,β)
     for n=1:length(dataset[i])
-        n_count += 1
+        global n_count += 1
         @RV y[n_count] ~ GaussianMeanPrecision(x[i],w[i])
         placeholder(y[n_count], :y, index=n_count)
     end
@@ -64,12 +64,11 @@ for i=1:8
     q_w[i] = PosteriorFactor(w[i],id=:w_*i)
 end
 
-run_time = 0.
 # Build the algorithm
-run_time += @elapsed algo = messagePassingAlgorithm(free_energy=true)
+algo = messagePassingAlgorithm(free_energy=true)
 
 # Generate source code
-run_time += @elapsed source_code = algorithmSourceCode(algo, free_energy=true);
+source_code = algorithmSourceCode(algo, free_energy=true);
 eval(Meta.parse(source_code));
 
 # -------------------------------------------
@@ -86,27 +85,25 @@ end
 
 y_data = []
 for i=1:8
-    y_data = [y_data;dataset[i]]
+    global y_data = [y_data;dataset[i]]
 end
 data = Dict(:y => y_data)
 
 n_its = 10
 FE_estimate_CVI = []
-run_time_CVI = []
 for j=1:n_its
     for i=1:8
-        run_time += @elapsed step!(:x_*i,data, marginals)
+        step!(:x_*i,data, marginals)
     end
     for i=1:8
-        run_time += @elapsed step!(:w_*i,data, marginals)
+        step!(:w_*i,data, marginals)
     end
-    run_time += @elapsed stepμ!(data, marginals)
-    run_time += @elapsed steps!(data, marginals)
-    run_time += @elapsed stepβ!(data, marginals)
-    run_time += @elapsed stepα!(data, marginals)
+    stepμ!(data, marginals)
+    steps!(data, marginals)
+    stepβ!(data, marginals)
+    stepα!(data, marginals)
     push!(FE_estimate_CVI, freeEnergy(data, marginals))
-    push!(run_time_CVI, run_time)
 end
 
 # Save free energy and run time values
-writedlm("Hierarchical/cvi_fe.txt", [run_time_CVI, FE_estimate_CVI])
+writedlm("Hierarchical/cvi_fe.txt", FE_estimate_CVI)
