@@ -1,5 +1,5 @@
 # stochasticVMP
-Experiments for "Probabilistic Programming with Stochastic Variational Message Passing". Please `]instantiate` and `]activate .` the package first.
+Experiments for "Probabilistic Programming with Stochastic Variational Message Passing". Please use Julia v1.5, then `]instantiate` and `]activate .` the package.
 
 ```bash
 julia --project=. -e 'import Pkg; Pkg.instantiate()'
